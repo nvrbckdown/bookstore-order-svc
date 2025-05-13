@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import List, Optional, Annotated
 from datetime import datetime
 from bson import ObjectId
 
@@ -15,7 +15,7 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
     
     @classmethod
-    def __modify_schema__(cls, field_schema):
+    def __get_pydantic_json_schema__(cls, field_schema):
         field_schema.update(type="string")
 
 class OrderItem(BaseModel):
@@ -24,25 +24,22 @@ class OrderItem(BaseModel):
     quantity: int = Field(gt=0)
     price: float = Field(ge=0)
     
-    class Config:
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class OrderCreate(BaseModel):
     customer_name: str
     customer_email: str
     items: List[OrderItem]
     
-    class Config:
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class OrderUpdate(BaseModel):
     status: Optional[str] = None
     
-    class Config:
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class Order(BaseModel):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: Annotated[PyObjectId, Field(default_factory=PyObjectId, alias="_id")]
     customer_name: str
     customer_email: str
     items: List[OrderItem]
@@ -51,6 +48,8 @@ class Order(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
-    class Config:
-        allow_population_by_field_name = True
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )

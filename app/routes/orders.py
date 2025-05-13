@@ -10,7 +10,7 @@ router = APIRouter()
 async def create_order(order: OrderCreate):
     """Create a new order"""
     # Verify books exist
-    items_dict = [item.dict() for item in order.items]
+    items_dict = [item.model_dump() for item in order.items]  # Changed from .dict() to .model_dump()
     if not await OrderService.verify_books_exist(items_dict):
         raise HTTPException(status_code=404, detail="One or more books not found")
     

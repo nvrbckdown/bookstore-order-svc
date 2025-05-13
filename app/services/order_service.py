@@ -1,8 +1,9 @@
 from typing import List, Optional
 from bson import ObjectId
+from datetime import datetime
+import httpx
 from app.models.order import Order, OrderCreate, OrderUpdate
 from app.database import db
-import httpx
 from app.config import settings
 
 class OrderService:
@@ -16,9 +17,11 @@ class OrderService:
         order_doc = {
             "customer_name": order_data.customer_name,
             "customer_email": order_data.customer_email,
-            "items": [item.dict() for item in order_data.items],
+            "items": [item.model_dump() for item in order_data.items],  # Changed from .dict() to .model_dump()
             "total_amount": total_amount,
-            "status": "pending"
+            "status": "pending",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
         }
         
         # Insert into database
