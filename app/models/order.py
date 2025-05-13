@@ -1,22 +1,17 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional, Annotated
+from pydantic import BaseModel, Field, ConfigDict, field_validator
+from typing import List, Optional, Annotated, Any
 from datetime import datetime
 from bson import ObjectId
+from pydantic.functional_validators import BeforeValidator
 
-class PyObjectId(ObjectId):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-    
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
+def validate_object_id(v: Any) -> ObjectId:
+    if isinstance(v, ObjectId):
+        return v
+    if isinstance(v, str) and ObjectId.is_valid(v):
         return ObjectId(v)
-    
-    @classmethod
-    def __get_pydantic_json_schema__(cls, _field_schema, handler):
-        return {"type": "string"}
+    raise ValueError("Invalid ObjectId")
+
+PyObjectId = Annotated[ObjectId, BeforeValidator(validate_object_id)]
 
 class OrderItem(BaseModel):
     book_id: int
@@ -39,7 +34,7 @@ class OrderUpdate(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class Order(BaseModel):
-    id: Annotated[PyObjectId, Field(default_factory=PyObjectId, alias="_id")]
+    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
     customer_name: str
     customer_email: str
     items: List[OrderItem]
